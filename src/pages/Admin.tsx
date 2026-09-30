@@ -208,17 +208,17 @@ function Ranking({ groups, label }: { groups: GroupStat[]; label: string }) {
       </h2>
       <div className="mt-4 space-y-2">
         {ranked.map((r, i) => (
-          <div key={r.key} className="flex items-center gap-3">
-            <span className="w-6 text-right text-sm font-semibold text-slate-400">{i + 1}</span>
-            <span className="w-52 shrink-0 truncate text-sm text-slate-700" title={r.key}>
+          <div key={r.key} className="flex items-center gap-2 sm:gap-3">
+            <span className="w-5 shrink-0 text-right text-sm font-semibold text-slate-400">{i + 1}</span>
+            <span className="w-28 shrink-0 truncate text-sm text-slate-700 sm:w-52" title={r.key}>
               {r.key}
             </span>
             <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
               <div className="h-full rounded-full bg-naval-600" style={{ width: `${(r.score / 5) * 100}%` }} />
             </div>
-            <span className="w-16 text-right text-sm font-semibold text-naval-800">
+            <span className="w-14 shrink-0 text-right text-sm font-semibold text-naval-800 sm:w-16">
               {r.score.toFixed(2)}
-              <span className="text-xs font-normal text-slate-400"> ({r.total})</span>
+              <span className="hidden text-xs font-normal text-slate-400 sm:inline"> ({r.total})</span>
             </span>
           </div>
         ))}

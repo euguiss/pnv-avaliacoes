@@ -4,8 +4,18 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%; /* impede o iOS de reajustar tamanho de fonte */
 }
 
 body {
   @apply bg-slate-50 text-slate-800 antialiased;
+}
+
+/* Remove o realce cinza de toque no mobile e melhora a resposta ao toque */
+button,
+a,
+select,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }

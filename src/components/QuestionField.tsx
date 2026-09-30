@@ -30,7 +30,7 @@ export function QuestionField({ question, value, onChange, error }: Props) {
           <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-naval-600 focus:outline-none focus:ring-2 focus:ring-naval-100"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base sm:text-sm focus:border-naval-600 focus:outline-none focus:ring-2 focus:ring-naval-100"
           >
             <option value="">Selecione…</option>
             {question.optionGroups
@@ -57,10 +57,10 @@ export function QuestionField({ question, value, onChange, error }: Props) {
                 key={opt}
                 type="button"
                 onClick={() => onChange(opt)}
-                className={`rounded-full border px-4 py-1.5 text-sm transition ${
+                className={`rounded-full border px-4 py-2 text-sm transition ${
                   value === opt
                     ? "border-naval-600 bg-naval-600 text-white"
-                    : "border-slate-300 bg-white text-slate-700 hover:border-naval-600"
+                    : "border-slate-300 bg-white text-slate-700 active:bg-slate-50 hover:border-naval-600"
                 }`}
               >
                 {opt}
@@ -74,7 +74,7 @@ export function QuestionField({ question, value, onChange, error }: Props) {
             value={value}
             placeholder={question.placeholder}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-naval-600 focus:outline-none focus:ring-2 focus:ring-naval-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:border-naval-600 focus:outline-none focus:ring-2 focus:ring-naval-100"
           />
         )}
         {question.type === "textarea" && (
@@ -83,7 +83,7 @@ export function QuestionField({ question, value, onChange, error }: Props) {
             onChange={(e) => onChange(e.target.value)}
             rows={3}
             placeholder="Opcional"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-naval-600 focus:outline-none focus:ring-2 focus:ring-naval-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base sm:text-sm focus:border-naval-600 focus:outline-none focus:ring-2 focus:ring-naval-100"
           />
         )}
       </div>
@@ -92,50 +92,64 @@ export function QuestionField({ question, value, onChange, error }: Props) {
 }
 
 function LikertScale({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  // Escala compacta: 5 botões numéricos lado a lado (ótimo em mobile) + legenda nas pontas.
+  const short = ["Muito ruim", "Ruim", "Regular", "Bom", "Excelente"];
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-5">
-      {LIKERT_LABELS.map((label, i) => {
-        const v = String(i + 1);
-        const active = value === v;
-        return (
-          <button
-            key={v}
-            type="button"
-            onClick={() => onChange(v)}
-            className={`rounded-lg border px-2 py-2 text-xs sm:text-[13px] font-medium transition ${
-              active
-                ? "border-naval-600 bg-naval-600 text-white shadow-sm"
-                : "border-slate-300 bg-white text-slate-600 hover:border-naval-600 hover:text-naval-700"
-            }`}
-          >
-            {label}
-          </button>
-        );
-      })}
+    <div>
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+        {LIKERT_LABELS.map((_, i) => {
+          const v = String(i + 1);
+          const active = value === v;
+          return (
+            <button
+              key={v}
+              type="button"
+              aria-label={`${v} - ${short[i]}`}
+              onClick={() => onChange(v)}
+              className={`flex min-h-[52px] flex-col items-center justify-center rounded-lg border px-1 py-1.5 transition ${
+                active
+                  ? "border-naval-600 bg-naval-600 text-white shadow-sm"
+                  : "border-slate-300 bg-white text-slate-600 active:bg-slate-50 hover:border-naval-600 hover:text-naval-700"
+              }`}
+            >
+              <span className="text-base font-bold leading-none">{v}</span>
+              <span className={`mt-1 text-[10px] leading-tight ${active ? "text-white/90" : "text-slate-400"}`}>
+                {short[i]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 function NpsScale({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {Array.from({ length: 11 }, (_, i) => String(i)).map((v) => {
-        const active = value === v;
-        return (
-          <button
-            key={v}
-            type="button"
-            onClick={() => onChange(v)}
-            className={`h-9 w-9 rounded-lg border text-sm font-semibold transition ${
-              active
-                ? "border-naval-600 bg-naval-600 text-white"
-                : "border-slate-300 bg-white text-slate-600 hover:border-naval-600"
-            }`}
-          >
-            {v}
-          </button>
-        );
-      })}
+    <div>
+      <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-11">
+        {Array.from({ length: 11 }, (_, i) => String(i)).map((v) => {
+          const active = value === v;
+          return (
+            <button
+              key={v}
+              type="button"
+              onClick={() => onChange(v)}
+              className={`flex h-11 items-center justify-center rounded-lg border text-sm font-semibold transition ${
+                active
+                  ? "border-naval-600 bg-naval-600 text-white"
+                  : "border-slate-300 bg-white text-slate-600 active:bg-slate-50 hover:border-naval-600"
+              }`}
+            >
+              {v}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-1.5 flex justify-between text-[11px] text-slate-400">
+        <span>Nada provável</span>
+        <span>Muito provável</span>
+      </div>
     </div>
   );
 }

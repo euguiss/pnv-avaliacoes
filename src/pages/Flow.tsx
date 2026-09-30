@@ -78,15 +78,20 @@ export function Flow() {
 
 function ProgressBar({ current, total }: { current: number; total: number }) {
   const steps = [...STEPS.map((s) => s.short), "Revisão"];
-  const pct = (Math.min(current, total) / total) * 100;
+  const pct = ((Math.min(current, total) + 1) / (total + 1)) * 100;
+  const currentLabel = steps[Math.min(current, total)];
   return (
     <div className="mb-6">
-      <div className="mb-2 flex justify-between text-xs font-medium text-slate-500">
+      {/* Mobile: etapa atual em texto. Desktop: todos os rótulos. */}
+      <div className="mb-2 flex items-center justify-between text-xs font-medium sm:hidden">
+        <span className="text-naval-700">{currentLabel}</span>
+        <span className="text-slate-400">
+          Etapa {Math.min(current, total) + 1} de {total + 1}
+        </span>
+      </div>
+      <div className="mb-2 hidden justify-between text-xs font-medium sm:flex">
         {steps.map((label, i) => (
-          <span
-            key={label}
-            className={i <= current ? "text-naval-700" : "text-slate-400"}
-          >
+          <span key={label} className={i <= current ? "text-naval-700" : "text-slate-400"}>
             {label}
           </span>
         ))}
@@ -225,29 +230,29 @@ function StepSection({
         <p className="mt-3 text-sm text-red-600">Responda as perguntas obrigatórias destacadas.</p>
       )}
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-          >
-            ← Voltar
-          </button>
-        )}
+      <div className="mt-6 space-y-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:space-y-0">
+        <button
+          onClick={handleNext}
+          className="w-full rounded-lg bg-naval-800 px-6 py-3 text-sm font-semibold text-white hover:bg-naval-900 sm:order-last sm:ml-auto sm:w-auto sm:py-2.5"
+        >
+          {form.repeatable && hasAnyAnswer() ? "Salvar e continuar →" : "Continuar →"}
+        </button>
         {form.repeatable && (
           <button
             onClick={handleAddMore}
-            className="rounded-lg border border-naval-600 px-4 py-2.5 text-sm font-medium text-naval-700 hover:bg-naval-50"
+            className="w-full rounded-lg border border-naval-600 px-4 py-3 text-sm font-medium text-naval-700 hover:bg-naval-50 sm:w-auto sm:py-2.5"
           >
             {form.addMoreLabel || "+ Adicionar outra"}
           </button>
         )}
-        <button
-          onClick={handleNext}
-          className="ml-auto rounded-lg bg-naval-800 px-6 py-2.5 text-sm font-semibold text-white hover:bg-naval-900"
-        >
-          {form.repeatable && hasAnyAnswer() ? "Salvar e continuar →" : "Continuar →"}
-        </button>
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 sm:w-auto sm:py-2.5"
+          >
+            ← Voltar
+          </button>
+        )}
       </div>
 
       {(form.repeatable || !form.questions.some((q) => q.required)) && (
