@@ -81,6 +81,38 @@ export function Flow() {
   );
 }
 
+// Legenda explicando a escala de notas de 1 a 5, exibida uma vez por seção.
+function ScaleLegend() {
+  const items = [
+    { n: 1, label: "Muito ruim", desc: "muito abaixo do esperado" },
+    { n: 2, label: "Ruim", desc: "abaixo do esperado" },
+    { n: 3, label: "Regular", desc: "atende ao mínimo" },
+    { n: 4, label: "Bom", desc: "acima do esperado" },
+    { n: 5, label: "Excelente", desc: "muito acima do esperado" },
+  ];
+  return (
+    <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+      <p className="text-sm font-medium text-slate-700">Como avaliar (escala de 1 a 5)</p>
+      <p className="mt-0.5 text-xs text-slate-500">
+        Em cada pergunta, escolha a nota que melhor representa sua experiência:
+      </p>
+      <ul className="mt-3 space-y-1.5">
+        {items.map((it) => (
+          <li key={it.n} className="flex items-center gap-3 text-sm">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-naval-600 text-xs font-bold text-white">
+              {it.n}
+            </span>
+            <span className="text-slate-700">
+              <strong>{it.label}</strong>
+              <span className="text-slate-400"> — {it.desc}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ProgressBar({ current, total }: { current: number; total: number }) {
   const steps = [...STEPS.map((s) => s.short), "Revisão"];
   const pct = ((Math.min(current, total) + 1) / (total + 1)) * 100;
@@ -202,6 +234,8 @@ function StepSection({
         <h1 className="mt-2 text-xl font-bold sm:text-2xl">{form.title}</h1>
         <p className="mt-1 text-sm text-white/90">{form.description}</p>
       </div>
+
+      {form.questions.some((q) => q.type === "likert") && <ScaleLegend />}
 
       {form.repeatable && added.length > 0 && (
         <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
