@@ -68,7 +68,10 @@ export function Home() {
       )}
 
       <footer className="mt-12 text-center text-xs text-slate-400">
-        Departamento de Engenharia Naval e Oceânica — Poli-USP
+        <p>Departamento de Engenharia Naval e Oceânica — Poli-USP</p>
+        <Link to="/admin" className="mt-2 inline-block text-slate-300 hover:text-naval-600 hover:underline">
+          Administração
+        </Link>
       </footer>
     </div>
   );

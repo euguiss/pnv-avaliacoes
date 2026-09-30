@@ -32,7 +32,9 @@ export function Flow() {
       markResponded(STEPS.map((s) => s.slug));
       navigate("/obrigado");
     } else {
-      setError("Não foi possível enviar. Verifique sua conexão e tente novamente.");
+      setError(
+        "Não foi possível enviar suas respostas. Isso pode ser uma instabilidade momentânea — tente novamente em alguns instantes. Se persistir, avise a organização."
+      );
     }
   }
 

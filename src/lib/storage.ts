@@ -63,9 +63,18 @@ export async function submit(payload: SubmissionPayload): Promise<boolean> {
     localStorage.setItem("pnv-avaliacoes:local", JSON.stringify(local));
     return true;
   }
+  // Guarda um backup local SEMPRE (mesmo com backend), para nada se perder
+  // caso o envio remoto falhe. O admin também consegue recuperar daqui.
+  const local = loadLocal();
+  local.push(payload);
+  localStorage.setItem("pnv-avaliacoes:local", JSON.stringify(local));
+
   try {
+    // no-cors: o Apps Script grava normalmente; a resposta fica opaca (esperado).
+    // Como não dá para ler o corpo, tratamos ausência de exceção como sucesso.
     await fetch(API_URL as string, {
       method: "POST",
+      mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
     });
