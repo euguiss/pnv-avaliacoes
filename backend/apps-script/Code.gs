@@ -56,7 +56,12 @@ function doPost(e) {
         if (col === "submissionId") return payload.submissionId || "";
         return answers[col] !== undefined ? answers[col] : "";
       });
-      sheet.appendRow(row);
+      // Grava a partir da próxima linha forçando formato TEXTO em todas as células,
+      // para o Sheets não converter valores como "2026/2" em data.
+      var targetRow = sheet.getLastRow() + 1;
+      var range = sheet.getRange(targetRow, 1, 1, row.length);
+      range.setNumberFormat("@"); // @ = texto puro
+      range.setValues([row.map(function (v) { return String(v); })]);
     });
 
     return jsonOutput({ ok: true, count: items.length });
