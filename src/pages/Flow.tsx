@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FORMS } from "../data/forms";
+import { FORMS, MATERIA_OUTRA, PROFESSOR_OUTRO } from "../data/forms";
 import type { FormDef } from "../data/forms";
 import { QuestionField } from "../components/QuestionField";
 import { useSession } from "../lib/session";
@@ -8,6 +8,19 @@ import { markResponded, newId, submit } from "../lib/storage";
 
 // Ordem do fluxo guiado
 const STEPS = FORMS;
+
+// Se o usuário escolheu "Outra/Outro" e digitou um valor, usa o valor digitado
+// como identificador (para o admin agrupar corretamente por matéria/professor).
+function normalizeAnswers(answers: Record<string, string>): Record<string, string> {
+  const a = { ...answers };
+  if (a.disciplina === MATERIA_OUTRA && a.disciplina_outra?.trim()) {
+    a.disciplina = a.disciplina_outra.trim();
+  }
+  if (a.professor === PROFESSOR_OUTRO && a.professor_outro?.trim()) {
+    a.professor = a.professor_outro.trim();
+  }
+  return a;
+}
 
 export function Flow() {
   const navigate = useNavigate();
@@ -100,8 +113,23 @@ function StepSection({
   const [errors, setErrors] = useState<Set<string>>(new Set());
   const added = session.itemsForForm(form.slug);
 
+  // Uma pergunta condicional só é visível quando a pergunta-gatilho tem o valor esperado.
+  function isVisible(q: (typeof form.questions)[number]): boolean {
+    if (!q.showIf) return true;
+    return q.showIf.equals.includes(answers[q.showIf.questionId] ?? "");
+  }
+
   function setAnswer(id: string, value: string) {
-    setAnswers((prev) => ({ ...prev, [id]: value }));
+    setAnswers((prev) => {
+      const next = { ...prev, [id]: value };
+      // Se o gatilho mudou, limpa campos condicionais que deixaram de ser visíveis.
+      for (const q of form.questions) {
+        if (q.showIf && q.showIf.questionId === id && !q.showIf.equals.includes(value)) {
+          delete next[q.id];
+        }
+      }
+      return next;
+    });
     setErrors((prev) => {
       const n = new Set(prev);
       n.delete(id);
@@ -112,7 +140,7 @@ function StepSection({
   function validate(): boolean {
     const missing = new Set<string>();
     for (const q of form.questions) {
-      if (q.required && !answers[q.id]?.trim()) missing.add(q.id);
+      if (q.required && isVisible(q) && !answers[q.id]?.trim()) missing.add(q.id);
     }
     setErrors(missing);
     if (missing.size > 0) {
@@ -130,7 +158,7 @@ function StepSection({
 
   function addCurrent(): boolean {
     if (!validate()) return false;
-    session.addItem({ formSlug: form.slug, answers });
+    session.addItem({ formSlug: form.slug, answers: normalizeAnswers(answers) });
     setAnswers({});
     window.scrollTo({ top: 0, behavior: "smooth" });
     return true;
@@ -151,7 +179,7 @@ function StepSection({
       // Forms não-repetíveis: se preencheu algo, valida e salva; se pulou, segue sem salvar.
       if (hasAnyAnswer()) {
         if (!validate()) return;
-        session.addItem({ formSlug: form.slug, answers });
+        session.addItem({ formSlug: form.slug, answers: normalizeAnswers(answers) });
       }
       onNext();
     }
@@ -181,7 +209,7 @@ function StepSection({
       )}
 
       <div className="mt-4 space-y-4">
-        {form.questions.map((q) => (
+        {form.questions.filter(isVisible).map((q) => (
           <div key={q.id} id={`q-${q.id}`}>
             <QuestionField
               question={q}
@@ -298,11 +326,19 @@ function ReviewStep({
         <button
           onClick={onFinish}
           disabled={sending || total === 0}
-          className="ml-auto rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40"
+          className="ml-auto inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
         >
+          {sending && (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+          )}
           {sending ? "Enviando…" : "Enviar avaliações"}
         </button>
       </div>
+      {sending && (
+        <p className="mt-2 text-center text-xs text-slate-400">
+          Enviando com segurança… isso pode levar alguns segundos.
+        </p>
+      )}
     </div>
   );
 }

@@ -18,6 +18,10 @@ export interface Question {
   options?: string[]; // para select / radio (lista simples)
   optionGroups?: OptionGroup[]; // para select agrupado (<optgroup>)
   help?: string;
+  placeholder?: string;
+  // Renderiza esta pergunta só quando outra pergunta tiver um dos valores listados.
+  // Ex.: campo "outra disciplina" aparece só quando disciplina === "Outra (...)".
+  showIf?: { questionId: string; equals: string[] };
 }
 
 export interface FormDef {
@@ -117,9 +121,12 @@ export const MATERIAS_GRUPOS: OptionGroup[] = [
   },
   {
     label: "Outra",
-    options: ["Outra (especificar nos comentários)"],
+    options: ["Outra disciplina (não listada)"],
   },
 ];
+
+// Valor da opção "Outra" da disciplina (usado para mostrar o campo condicional).
+export const MATERIA_OUTRA = "Outra disciplina (não listada)";
 
 // Lista achatada (compat. para exportação/validação e outros usos).
 export const MATERIAS: string[] = MATERIAS_GRUPOS.flatMap((g) => g.options);
@@ -150,8 +157,11 @@ export const PROFESSORES: string[] = [
   "Pedro Cardozo de Mello",
   "Renato Picelli Sanches",
   "Thiago Lopes",
-  "Outro (especificar nos comentários)",
+  "Outro(a) docente (não listado)",
 ];
+
+// Valor da opção "Outro" do docente (usado para mostrar o campo condicional).
+export const PROFESSOR_OUTRO = "Outro(a) docente (não listado)";
 
 // Semestres do mais recente ao mais antigo (até 2018/1 — ainda há veteranos dessa época).
 export const SEMESTRES: string[] = [
@@ -191,6 +201,14 @@ export const FORMS: FormDef[] = [
     addMoreLabel: "+ Avaliar outra disciplina",
     questions: [
       { id: "disciplina", label: "Qual disciplina você está avaliando?", type: "select", required: true, optionGroups: MATERIAS_GRUPOS },
+      {
+        id: "disciplina_outra",
+        label: "Digite o código e o nome da disciplina",
+        type: "text",
+        required: true,
+        placeholder: "Ex.: PNV3417 – Nome da disciplina",
+        showIf: { questionId: "disciplina", equals: [MATERIA_OUTRA] },
+      },
       { id: "semestre", label: "Em que semestre/ano você cursou?", type: "select", options: SEMESTRES },
       { id: "clareza", label: "Clareza dos objetivos e do conteúdo da disciplina.", type: "likert", required: true },
       { id: "material", label: "Qualidade do material didático (slides, apostilas, bibliografia).", type: "likert", required: true },
@@ -218,6 +236,14 @@ export const FORMS: FormDef[] = [
     addMoreLabel: "+ Avaliar outro(a) docente",
     questions: [
       { id: "professor", label: "Qual professor(a) você está avaliando?", type: "select", required: true, options: PROFESSORES },
+      {
+        id: "professor_outro",
+        label: "Digite o nome do(a) docente",
+        type: "text",
+        required: true,
+        placeholder: "Nome completo do(a) professor(a)",
+        showIf: { questionId: "professor", equals: [PROFESSOR_OUTRO] },
+      },
       { id: "disciplina", label: "Em qual disciplina você teve aula com este(a) docente?", type: "text" },
       { id: "didatica", label: "Clareza e didática nas explicações.", type: "likert", required: true },
       { id: "dominio", label: "Domínio e atualização do conteúdo.", type: "likert", required: true },

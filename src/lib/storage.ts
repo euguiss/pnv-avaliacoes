@@ -72,14 +72,23 @@ export async function submit(payload: SubmissionPayload): Promise<boolean> {
   try {
     // no-cors: o Apps Script grava normalmente; a resposta fica opaca (esperado).
     // Como não dá para ler o corpo, tratamos ausência de exceção como sucesso.
+    // Timeout de segurança: se o Apps Script demorar demais, não deixamos o usuário
+    // travado — a resposta já está no backup local e o envio foi disparado.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
     await fetch(API_URL as string, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
+    clearTimeout(timer);
     return true;
-  } catch {
+  } catch (err) {
+    // AbortError = timeout: o request provavelmente foi enviado; consideramos sucesso
+    // (o backup local garante que nada se perde).
+    if (err instanceof DOMException && err.name === "AbortError") return true;
     return false;
   }
 }

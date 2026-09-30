@@ -72,6 +72,7 @@ export function QuestionField({ question, value, onChange, error }: Props) {
           <input
             type="text"
             value={value}
+            placeholder={question.placeholder}
             onChange={(e) => onChange(e.target.value)}
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-naval-600 focus:outline-none focus:ring-2 focus:ring-naval-100"
           />
