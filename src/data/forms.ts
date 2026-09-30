@@ -28,6 +28,13 @@ export interface FormDef {
   icon: string;
   accent: string; // classe tailwind de cor
   questions: Question[];
+  // repeatable = o aluno pode avaliar vários itens (várias matérias / professores) numa sessão.
+  repeatable?: boolean;
+  // groupBy = id da pergunta usada para segmentar as métricas no admin
+  // (ex.: "disciplina" agrupa por matéria; "professor" agrupa por docente).
+  groupBy?: string;
+  // texto do botão para adicionar mais uma avaliação (quando repeatable).
+  addMoreLabel?: string;
 }
 
 // Escala Likert padrão usada em todos os formulários
@@ -146,12 +153,26 @@ export const PROFESSORES: string[] = [
   "Outro (especificar nos comentários)",
 ];
 
+// Semestres do mais recente ao mais antigo (até 2018/1 — ainda há veteranos dessa época).
 export const SEMESTRES: string[] = [
-  "2024/1",
-  "2024/2",
-  "2025/1",
-  "2025/2",
   "2026/1",
+  "2025/2",
+  "2025/1",
+  "2024/2",
+  "2024/1",
+  "2023/2",
+  "2023/1",
+  "2022/2",
+  "2022/1",
+  "2021/2",
+  "2021/1",
+  "2020/2",
+  "2020/1",
+  "2019/2",
+  "2019/1",
+  "2018/2",
+  "2018/1",
+  "Antes de 2018/1",
 ];
 
 export const ANOS_CURSO = ["1º ano", "2º ano", "3º ano", "4º ano", "5º ano"];
@@ -161,9 +182,12 @@ export const FORMS: FormDef[] = [
     slug: "materias",
     title: "Avaliação das Disciplinas do PNV",
     short: "Matérias",
-    description: "Seu feedback ajuda a melhorar as disciplinas do curso. É anônimo e leva ~3 min.",
+    description: "Avalie as disciplinas que você cursou. É anônimo. Você pode avaliar quantas quiser.",
     icon: "📚",
     accent: "bg-blue-600",
+    repeatable: true,
+    groupBy: "disciplina",
+    addMoreLabel: "+ Avaliar outra disciplina",
     questions: [
       { id: "disciplina", label: "Qual disciplina você está avaliando?", type: "select", required: true, optionGroups: MATERIAS_GRUPOS },
       { id: "semestre", label: "Em que semestre/ano você cursou?", type: "select", options: SEMESTRES },
@@ -185,9 +209,12 @@ export const FORMS: FormDef[] = [
     title: "Avaliação dos Docentes do PNV",
     short: "Professores",
     description:
-      "Feedback construtivo e anônimo sobre o corpo docente. Sem ataques pessoais, por favor. ~3 min.",
+      "Feedback construtivo e anônimo sobre o corpo docente. Sem ataques pessoais, por favor. Avalie quantos quiser.",
     icon: "👩‍🏫",
     accent: "bg-emerald-600",
+    repeatable: true,
+    groupBy: "professor",
+    addMoreLabel: "+ Avaliar outro(a) docente",
     questions: [
       { id: "professor", label: "Qual professor(a) você está avaliando?", type: "select", required: true, options: PROFESSORES },
       { id: "disciplina", label: "Em qual disciplina você teve aula com este(a) docente?", type: "text" },

@@ -1,50 +1,73 @@
-// Camada de persistência: as respostas ficam salvas no localStorage do navegador.
-// Simples e sem backend — ideal para postar o link e coletar respostas localmente,
-// depois exportar em CSV para consolidar.
+// Camada de dados do app.
+// - Envio: cada submissão pode conter VÁRIAS avaliações (itens), ex.: várias matérias.
+// - Coleta central: envia ao backend Google Apps Script (VITE_API_URL).
+// - Anti-duplicação: marca no navegador quais formulários o usuário já respondeu (sem identificar).
+// - Admin: lê todas as respostas do backend com senha, para métricas e export.
 
-export interface Submission {
-  id: string;
+export interface EvalItem {
   formSlug: string;
-  createdAt: string; // ISO
   answers: Record<string, string>;
 }
 
-const KEY = "pnv-avaliacoes:submissions";
-
-export function loadSubmissions(): Submission[] {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as Submission[];
-  } catch {
-    return [];
-  }
+export interface SubmissionPayload {
+  submissionId: string;
+  createdAt: string; // ISO
+  items: EvalItem[];
 }
 
-export function saveSubmission(sub: Submission): void {
-  const all = loadSubmissions();
-  all.push(sub);
-  localStorage.setItem(KEY, JSON.stringify(all));
-}
-
-// Endpoint remoto opcional para coleta centralizada (Google Apps Script, Supabase, etc.).
-// Configure em .env como VITE_API_URL. Se vazio, o app funciona 100% local.
 const API_URL = import.meta.env.VITE_API_URL as string | undefined;
+const DONE_KEY = "pnv-avaliacoes:respondidos";
 
 export function isRemoteEnabled(): boolean {
   return Boolean(API_URL && API_URL.trim().length > 0);
 }
 
-// Envia a resposta ao backend remoto (se configurado). Não bloqueia o fluxo local:
-// a resposta já foi salva localmente por saveSubmission.
-export async function syncSubmission(sub: Submission): Promise<boolean> {
-  if (!isRemoteEnabled()) return false;
+export function newId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// ---- Anti-duplicação leve (por navegador, anônimo) --------------------------
+
+export function respondedForms(): string[] {
+  try {
+    const raw = localStorage.getItem(DONE_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function hasResponded(slug: string): boolean {
+  return respondedForms().includes(slug);
+}
+
+export function markResponded(slugs: string[]): void {
+  const set = new Set(respondedForms());
+  slugs.forEach((s) => set.add(s));
+  localStorage.setItem(DONE_KEY, JSON.stringify([...set]));
+}
+
+export function resetResponded(): void {
+  localStorage.removeItem(DONE_KEY);
+}
+
+// ---- Envio ------------------------------------------------------------------
+
+// Envia a submissão ao backend. Retorna true se enviou (ou se não há backend, salva local).
+export async function submit(payload: SubmissionPayload): Promise<boolean> {
+  markResponded(payload.items.map((i) => i.formSlug));
+  if (!isRemoteEnabled()) {
+    // Fallback local: acumula num rascunho local (útil em dev sem backend).
+    const local = loadLocal();
+    local.push(payload);
+    localStorage.setItem("pnv-avaliacoes:local", JSON.stringify(local));
+    return true;
+  }
   try {
     await fetch(API_URL as string, {
       method: "POST",
-      // text/plain evita preflight CORS no Google Apps Script
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(sub),
+      body: JSON.stringify(payload),
     });
     return true;
   } catch {
@@ -52,31 +75,65 @@ export async function syncSubmission(sub: Submission): Promise<boolean> {
   }
 }
 
-export function submissionsForForm(slug: string): Submission[] {
-  return loadSubmissions().filter((s) => s.formSlug === slug);
+function loadLocal(): SubmissionPayload[] {
+  try {
+    const raw = localStorage.getItem("pnv-avaliacoes:local");
+    return raw ? (JSON.parse(raw) as SubmissionPayload[]) : [];
+  } catch {
+    return [];
+  }
 }
 
-export function clearForm(slug: string): void {
-  const remaining = loadSubmissions().filter((s) => s.formSlug !== slug);
-  localStorage.setItem(KEY, JSON.stringify(remaining));
+// ---- Admin: leitura das respostas -------------------------------------------
+
+export type AdminData = Record<string, Record<string, string>[]>;
+
+// Busca todas as respostas do backend (requer senha). Se não houver backend,
+// devolve os dados locais (modo dev).
+export async function fetchAdminData(password: string): Promise<AdminData> {
+  if (!isRemoteEnabled()) {
+    return localToAdminData();
+  }
+  const url = `${API_URL}?pwd=${encodeURIComponent(password)}`;
+  const res = await fetch(url, { method: "GET" });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || "Falha ao carregar dados");
+  return json.data as AdminData;
 }
 
-export function newId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+function localToAdminData(): AdminData {
+  const out: AdminData = {};
+  for (const sub of loadLocal()) {
+    for (const item of sub.items) {
+      if (!out[item.formSlug]) out[item.formSlug] = [];
+      out[item.formSlug].push({
+        createdAt: sub.createdAt,
+        submissionId: sub.submissionId,
+        ...item.answers,
+      });
+    }
+  }
+  return out;
 }
 
-// Exporta as respostas de um formulário como CSV.
-export function toCSV(subs: Submission[], questionIds: string[]): string {
-  const header = ["id", "data", ...questionIds];
-  const rows = subs.map((s) => {
-    const cells = [s.id, s.createdAt, ...questionIds.map((q) => s.answers[q] ?? "")];
-    return cells.map(escapeCSV).join(",");
-  });
-  return [header.map(escapeCSV).join(","), ...rows].join("\n");
+// ---- Exportação CSV ---------------------------------------------------------
+
+export function toCSV(rows: Record<string, string>[]): string {
+  if (rows.length === 0) return "";
+  const cols = Array.from(
+    rows.reduce((set, r) => {
+      Object.keys(r).forEach((k) => set.add(k));
+      return set;
+    }, new Set<string>())
+  );
+  const header = cols.map(escapeCSV).join(",");
+  const body = rows
+    .map((r) => cols.map((c) => escapeCSV(String(r[c] ?? ""))).join(","))
+    .join("\n");
+  return `${header}\n${body}`;
 }
 
-function escapeCSV(value: string): string {
-  const v = String(value ?? "");
+function escapeCSV(v: string): string {
   if (v.includes(",") || v.includes('"') || v.includes("\n")) {
     return `"${v.replace(/"/g, '""')}"`;
   }
