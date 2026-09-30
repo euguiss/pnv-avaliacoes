@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FORMS, MATERIA_OUTRA, PROFESSOR_OUTRO } from "../data/forms";
 import type { FormDef } from "../data/forms";
@@ -31,6 +31,11 @@ export function Flow() {
 
   const isReview = step >= STEPS.length;
   const form = STEPS[step];
+
+  // Ao mudar de etapa, rola a página para o topo (importante no mobile).
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step]);
 
   async function finish() {
     setSending(true);
