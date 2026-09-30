@@ -155,6 +155,7 @@ export const PROFESSORES: string[] = [
 
 // Semestres do mais recente ao mais antigo (até 2018/1 — ainda há veteranos dessa época).
 export const SEMESTRES: string[] = [
+  "2026/2",
   "2026/1",
   "2025/2",
   "2025/1",
