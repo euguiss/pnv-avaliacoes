@@ -106,3 +106,28 @@ function jsonOutput(obj) {
     ContentService.MimeType.JSON
   );
 }
+
+/**
+ * Função de TESTE — pode rodar manualmente (▶) aqui no editor para conferir
+ * se o script grava na planilha. Ela simula um envio do app.
+ * Depois de rodar, veja se apareceu uma linha "TESTE" na aba "materias".
+ * (NÃO é usada pelo app; serve só para você validar.)
+ */
+function testeManual() {
+  var fakeEvent = {
+    postData: {
+      contents: JSON.stringify({
+        submissionId: "teste-manual",
+        createdAt: new Date().toISOString(),
+        items: [
+          {
+            formSlug: "materias",
+            answers: { disciplina: "TESTE - pode apagar", geral: "5", clareza: "4" },
+          },
+        ],
+      }),
+    },
+  };
+  var res = doPost(fakeEvent);
+  Logger.log(res.getContent()); // deve mostrar {"ok":true,"count":1}
+}
