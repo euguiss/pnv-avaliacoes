@@ -33,11 +33,21 @@ export function QuestionField({ question, value, onChange, error }: Props) {
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-naval-600 focus:outline-none focus:ring-2 focus:ring-naval-100"
           >
             <option value="">Selecione…</option>
-            {question.options?.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
+            {question.optionGroups
+              ? question.optionGroups.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))
+              : question.options?.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
           </select>
         )}
         {question.type === "radio" && (

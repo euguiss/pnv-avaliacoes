@@ -1,15 +1,22 @@
 // Definições dos 4 formulários de avaliação do Departamento PNV (Eng. Naval e Oceânica / Poli-USP)
-// As listas de matérias e professores são placeholders editáveis — veja README para como preencher
-// com os dados oficiais do JupiterWeb / site do departamento.
+// Matérias e professores preenchidos com dados oficiais (relação de disciplinas PNV ativas
+// e orientadores do PPGEN). Atualize conforme mudanças de grade / corpo docente.
 
 export type QuestionType = "likert" | "nps" | "select" | "text" | "textarea" | "radio";
+
+// Grupo de opções para <select> (permite <optgroup>).
+export interface OptionGroup {
+  label: string;
+  options: string[];
+}
 
 export interface Question {
   id: string;
   label: string;
   type: QuestionType;
   required?: boolean;
-  options?: string[]; // para select / radio
+  options?: string[]; // para select / radio (lista simples)
+  optionGroups?: OptionGroup[]; // para select agrupado (<optgroup>)
   help?: string;
 }
 
@@ -32,13 +39,83 @@ export const LIKERT_LABELS = [
   "5 · Excelente",
 ];
 
-// ⚠️ EDITE ESTAS LISTAS com os dados oficiais (JupiterWeb → sigla "PNV"; site pnv.poli.usp.br → Docentes)
-export const MATERIAS: string[] = [
-  "PNV3100 – (edite: nome da disciplina)",
-  "PNV3200 – (edite: nome da disciplina)",
-  "PNV3320 – (edite: nome da disciplina)",
-  "Outra (especificar nos comentários)",
+// Disciplinas PNV ativas (fonte: relação oficial de disciplinas do departamento).
+// Filtramos as versões substituídas por mudança de grade, mantendo as vigentes.
+// A grade nova usa prefixo PNV1xxx; as PNV3xxx são as demais disciplinas ainda ofertadas.
+// Ex.: Introdução à Eng. Naval agora é PNV1120; Hidrostática e Estabilidade agora é PNV1222.
+export const MATERIAS_GRUPOS: OptionGroup[] = [
+  {
+    label: "Grade nova (ciclo básico – PNV1xxx)",
+    options: [
+      "PNV1100 – Introdução ao Projeto de Engenharia",
+      "PNV1120 – Introdução à Engenharia Naval e Oceânica",
+      "PNV1211 – Desafios Atuais na Engenharia Naval e Oceânica",
+      "PNV1221 – Fundamentos de Mecânica dos Sólidos e Resistência dos Materiais",
+      "PNV1222 – Hidrostática e Estabilidade",
+      "PNV1560 – Princípios de Células a Combustível",
+    ],
+  },
+  {
+    label: "Disciplinas do curso (PNV3xxx)",
+    options: [
+      "PNV3210 – Introdução à Engenharia Naval e Oceânica (grade anterior)",
+      "PNV3212 – Mecânica dos Sólidos I",
+      "PNV3222 – Mecânica dos Sólidos II",
+      "PNV3314 – Dinâmica de Sistemas I",
+      "PNV3315 – Hidrostática e Estabilidade (grade anterior)",
+      "PNV3321 – Métodos de Otimização Aplicados a Sistemas de Engenharia",
+      "PNV3322 – Mecânica de Estruturas Navais e Oceânicas I",
+      "PNV3323 – Hidrodinâmica I",
+      "PNV3324 – Fundamentos de Controle em Engenharia",
+      "PNV3391 – Laboratório de Engenharia Naval I",
+      "PNV3392 – Laboratório de Engenharia Naval II",
+      "PNV3395 – Projeto de Extensão I",
+      "PNV3396 – Projeto de Extensão II",
+      "PNV3411 – Transportes Marítimo e Fluvial",
+      "PNV3412 – Mecânica de Estruturas Navais e Oceânicas II",
+      "PNV3413 – Hidrodinâmica II",
+      "PNV3414 – Dinâmica de Sistemas II",
+      "PNV3415 – Projeto de Navios",
+      "PNV3416 – Instalações Propulsoras",
+      "PNV3421 – Processos Estocásticos",
+      "PNV3425 – Projeto de Sistemas Oceânicos",
+      "PNV3426 – Introdução a Projetos de Sistemas Oceânicos para Extração de Petróleo",
+      "PNV3510 – Trabalho de Formatura I",
+      "PNV3511 – Operações de Apoio à Exploração e Produção de Petróleo",
+      "PNV3512 – Planejamento e Operações de Sistemas Logísticos",
+      "PNV3513 – Planejamento e Operações de Sistemas Portuários",
+      "PNV3514 – Estágio Supervisionado",
+      "PNV3516 – Projeto de Pesquisa em Engenharia Naval e Oceânica I",
+      "PNV3517 – Sistemas de Apoio à Exploração e Produção do Petróleo no Mar",
+      "PNV3520 – Trabalho de Formatura II",
+      "PNV3521 – Tecnologia de Veículos Marítimos",
+      "PNV3522 – Exploração de Óleo e Gás",
+      "PNV3523 – Energia Renovável do Oceano",
+      "PNV3526 – Projeto de Pesquisa em Engenharia Naval e Oceânica II",
+    ],
+  },
+  {
+    label: "Optativas / tópicos (PNV36xx)",
+    options: [
+      "PNV3621 – Engenharia além da Técnica",
+      "PNV3631 – Princípios de Fadiga e Fratura de Estruturas Navais e Oceânicas",
+      "PNV3641 – Métodos Experimentais para Validação de Sistemas Oceânicos",
+      "PNV3642 – Introdução ao Projeto de Veleiros",
+      "PNV3643 – Materiais e Processos de Fabricação em Construção Naval",
+      "PNV3644 – Seminários sobre Tópicos da Indústria de Petróleo, Gás Natural e Biocombustíveis",
+      "PNV3645 – Aspectos Políticos, Ambientais, Legais e Práticos do Uso do Mar",
+      "PNV3646 – Introdução à Confiabilidade de Sistemas e Análise de Risco",
+      "PNV3647 – Hidrodinâmica em águas confinadas de portos e hidrovias",
+    ],
+  },
+  {
+    label: "Outra",
+    options: ["Outra (especificar nos comentários)"],
+  },
 ];
+
+// Lista achatada (compat. para exportação/validação e outros usos).
+export const MATERIAS: string[] = MATERIAS_GRUPOS.flatMap((g) => g.options);
 
 // Docentes/orientadores do PNV — fonte oficial: https://sites.usp.br/ppgen/orientadores/
 // + chefia atual (Gustavo Roque da Silva Assi). Confirme/atualize conforme o site do departamento.
@@ -88,7 +165,7 @@ export const FORMS: FormDef[] = [
     icon: "📚",
     accent: "bg-blue-600",
     questions: [
-      { id: "disciplina", label: "Qual disciplina você está avaliando?", type: "select", required: true, options: MATERIAS },
+      { id: "disciplina", label: "Qual disciplina você está avaliando?", type: "select", required: true, optionGroups: MATERIAS_GRUPOS },
       { id: "semestre", label: "Em que semestre/ano você cursou?", type: "select", options: SEMESTRES },
       { id: "clareza", label: "Clareza dos objetivos e do conteúdo da disciplina.", type: "likert", required: true },
       { id: "material", label: "Qualidade do material didático (slides, apostilas, bibliografia).", type: "likert", required: true },

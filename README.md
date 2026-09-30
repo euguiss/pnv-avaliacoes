@@ -22,13 +22,15 @@ npm run preview  # serve a versão de produção localmente
 
 ## ⚠️ Antes de publicar: preencha os dados oficiais
 
-Edite `src/data/forms.ts` e substitua as listas de exemplo pelos dados reais:
+As listas em `src/data/forms.ts` já vêm preenchidas com dados oficiais:
 
-- **`MATERIAS`** — extraia do JupiterWeb: https://uspdigital.usp.br/jupiterweb/jupDisciplinaBusca?tipo=D
-  → campo "Sigla da Disciplina" = `PNV` → buscar. Cole cada disciplina como `"PNV3xxx – Nome"`.
-- **`PROFESSORES`** — pegue no site do departamento (pnv.poli.usp.br → Docentes).
-  Já vêm preenchidos a chefia atual (Assi, Bergsten Mendes) e Simos — confirme/complete.
-- **`SEMESTRES`** — ajuste os períodos disponíveis.
+- **`MATERIAS_GRUPOS`** — disciplinas PNV ativas, agrupadas em "grade nova (PNV1xxx)",
+  "disciplinas do curso (PNV3xxx)" e "optativas/tópicos". As versões substituídas por
+  mudança de grade foram filtradas (mantida a vigente — ex.: Introdução é `PNV1120`,
+  Hidrostática e Estabilidade é `PNV1222`). Atualize quando a grade mudar.
+- **`PROFESSORES`** — 23 docentes/orientadores do PNV
+  (fonte: https://sites.usp.br/ppgen/orientadores/) + chefia atual.
+- **`SEMESTRES`** — ajuste os períodos disponíveis conforme o momento da coleta.
 
 ## Como funciona a coleta de respostas
 
