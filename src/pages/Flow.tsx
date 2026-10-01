@@ -238,8 +238,7 @@ function StepSection({
       </div>
 
       {form.repeatable && (
-        <div className="mt-4 flex items-start gap-3 rounded-lg border border-naval-200 bg-naval-50 px-4 py-3 text-sm text-naval-800">
-          <span aria-hidden className="mt-0.5 font-bold">+</span>
+        <div className="mt-4 rounded-lg border border-naval-200 bg-naval-50 px-4 py-3 text-sm text-naval-800">
           <p>
             Você pode avaliar <strong>mais de {form.slug === "professores" ? "um docente" : "uma disciplina"}</strong>.
             Após preencher, use o botão <strong>“{form.addMoreLabel}”</strong> para adicionar
