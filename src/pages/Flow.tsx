@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FORMS, MATERIA_OUTRA, PROFESSOR_OUTRO } from "../data/forms";
 import type { FormDef } from "../data/forms";
 import { QuestionField } from "../components/QuestionField";
+import { TopBar } from "../components/TopBar";
 import { useSession } from "../lib/session";
 import { markResponded, newId, submit } from "../lib/storage";
 
@@ -57,8 +58,10 @@ export function Flow() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <ProgressBar current={step} total={STEPS.length} />
+    <div className="min-h-screen">
+      <TopBar />
+      <div className="mx-auto max-w-2xl px-4 py-8">
+        <ProgressBar current={step} total={STEPS.length} />
 
       {!isReview && (
         <StepSection
@@ -71,12 +74,13 @@ export function Flow() {
 
       {isReview && (
         <ReviewStep
-          onBack={() => setStep(STEPS.length - 1)}
-          onFinish={finish}
-          sending={sending}
-          error={error}
-        />
-      )}
+            onBack={() => setStep(STEPS.length - 1)}
+            onFinish={finish}
+            sending={sending}
+            error={error}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -229,11 +233,20 @@ function StepSection({
 
   return (
     <div>
-      <div className={`rounded-2xl ${form.accent} p-6 text-white`}>
-        <div className="text-3xl">{form.icon}</div>
-        <h1 className="mt-2 text-xl font-bold sm:text-2xl">{form.title}</h1>
-        <p className="mt-1 text-sm text-white/90">{form.description}</p>
+      <div className={`rounded-xl ${form.accent} px-6 py-5 text-white`}>
+        <h1 className="text-lg font-semibold sm:text-xl">{form.banner}</h1>
       </div>
+
+      {form.repeatable && (
+        <div className="mt-4 flex items-start gap-3 rounded-lg border border-naval-200 bg-naval-50 px-4 py-3 text-sm text-naval-800">
+          <span aria-hidden className="mt-0.5 font-bold">+</span>
+          <p>
+            Você pode avaliar <strong>mais de {form.slug === "professores" ? "um docente" : "uma disciplina"}</strong>.
+            Após preencher, use o botão <strong>“{form.addMoreLabel}”</strong> para adicionar
+            {form.slug === "professores" ? " outro(a)" : " outra"} antes de continuar.
+          </p>
+        </div>
+      )}
 
       {form.questions.some((q) => q.type === "likert") && <ScaleLegend />}
 
@@ -269,29 +282,31 @@ function StepSection({
         <p className="mt-3 text-sm text-red-600">Responda as perguntas obrigatórias destacadas.</p>
       )}
 
-      <div className="mt-6 space-y-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:space-y-0">
+      {/* Botão de adicionar outra avaliação — destacado e, no mobile, ACIMA do "continuar". */}
+      {form.repeatable && (
         <button
-          onClick={handleNext}
-          className="w-full rounded-lg bg-naval-800 px-6 py-3 text-sm font-semibold text-white hover:bg-naval-900 sm:order-last sm:ml-auto sm:w-auto sm:py-2.5"
+          onClick={handleAddMore}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-naval-400 bg-naval-50 px-4 py-3 text-sm font-semibold text-naval-700 transition hover:border-naval-600 hover:bg-naval-100"
         >
-          {form.repeatable && hasAnyAnswer() ? "Salvar e continuar →" : "Continuar →"}
+          {form.addMoreLabel || "+ Adicionar outra"}
         </button>
-        {form.repeatable && (
-          <button
-            onClick={handleAddMore}
-            className="w-full rounded-lg border border-naval-600 px-4 py-3 text-sm font-medium text-naval-700 hover:bg-naval-50 sm:w-auto sm:py-2.5"
-          >
-            {form.addMoreLabel || "+ Adicionar outra"}
-          </button>
-        )}
+      )}
+
+      <div className="mt-3 space-y-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3 sm:space-y-0">
         {onBack && (
           <button
             onClick={onBack}
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 sm:w-auto sm:py-2.5"
+            className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 sm:order-first sm:w-auto sm:py-2.5"
           >
             ← Voltar
           </button>
         )}
+        <button
+          onClick={handleNext}
+          className="w-full rounded-lg bg-naval-800 px-6 py-3 text-sm font-semibold text-white hover:bg-naval-900 sm:ml-auto sm:w-auto sm:py-2.5"
+        >
+          {form.repeatable && hasAnyAnswer() ? "Salvar e continuar →" : "Continuar →"}
+        </button>
       </div>
 
       {(form.repeatable || !form.questions.some((q) => q.required)) && (
@@ -332,8 +347,9 @@ function ReviewStep({
         {byForm.map(({ form, items }) => (
           <div key={form.slug} className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between">
-              <span className="font-medium text-slate-800">
-                {form.icon} {form.short}
+              <span className="flex items-center gap-2 font-medium text-slate-800">
+                <span className={`h-2.5 w-2.5 rounded-full ${form.accent}`} />
+                {form.short}
               </span>
               <span className="text-sm text-slate-500">
                 {items.length} {items.length === 1 ? "avaliação" : "avaliações"}

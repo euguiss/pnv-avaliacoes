@@ -1,15 +1,14 @@
 import { Link } from "react-router-dom";
+import { CenLogo } from "../components/CenLogo";
 
 export function ThankYou() {
   return (
     <div className="mx-auto max-w-lg px-4 py-20 text-center">
-      <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-4xl">
-        ✅
-      </div>
-      <h1 className="text-2xl font-bold text-naval-900">Obrigado pela sua participação!</h1>
+      <CenLogo className="mx-auto h-16 w-16" />
+      <h1 className="mt-6 text-2xl font-bold text-naval-900">Obrigado pela sua contribuição</h1>
       <p className="mt-3 text-slate-600">
-        Suas avaliações foram enviadas de forma anônima e vão ajudar a melhorar o curso de
-        Engenharia Naval e Oceânica.
+        Suas avaliações foram enviadas de forma anônima e vão apoiar o aprimoramento contínuo
+        do curso de Engenharia Naval e Oceânica.
       </p>
       <Link
         to="/"

@@ -28,7 +28,9 @@ export interface FormDef {
   slug: string;
   title: string;
   short: string;
-  description: string;
+  description: string; // (legado) descrição longa
+  banner: string; // título conciso do banner interno
+  card: string; // descrição concisa do cartão na home
   icon: string;
   accent: string; // classe tailwind de cor
   questions: Question[];
@@ -195,15 +197,17 @@ export const FORMS: FormDef[] = [
   {
     slug: "materias",
     title: "Avaliação das Disciplinas do PNV",
-    short: "Matérias",
+    short: "Disciplinas",
     description: "Avalie as disciplinas que você cursou. É anônimo. Você pode avaliar quantas quiser.",
+    banner: "Avaliação de Disciplinas do PNV",
+    card: "Avaliação de ementa, conteúdo e metodologia das matérias cursadas.",
     icon: "📚",
     accent: "bg-blue-600",
     repeatable: true,
     groupBy: "disciplina",
     addMoreLabel: "+ Avaliar outra disciplina",
     questions: [
-      { id: "disciplina", label: "Qual disciplina você está avaliando?", type: "select", required: true, optionGroups: MATERIAS_GRUPOS },
+      { id: "disciplina", label: "Selecione a disciplina:", type: "select", required: true, optionGroups: MATERIAS_GRUPOS },
       {
         id: "disciplina_outra",
         label: "Digite o código e o nome da disciplina",
@@ -229,16 +233,18 @@ export const FORMS: FormDef[] = [
   {
     slug: "professores",
     title: "Avaliação dos Docentes do PNV",
-    short: "Professores",
+    short: "Corpo Docente",
     description:
       "Feedback construtivo e anônimo sobre o corpo docente. Sem ataques pessoais, por favor. Avalie quantos quiser.",
+    banner: "Avaliação do Corpo Docente do PNV",
+    card: "Feedback construtivo sobre didática e suporte oferecido pelos docentes.",
     icon: "👩‍🏫",
     accent: "bg-emerald-600",
     repeatable: true,
     groupBy: "professor",
     addMoreLabel: "+ Avaliar outro(a) docente",
     questions: [
-      { id: "professor", label: "Qual professor(a) você está avaliando?", type: "select", required: true, options: PROFESSORES },
+      { id: "professor", label: "Selecione o(a) docente:", type: "select", required: true, options: PROFESSORES },
       {
         id: "professor_outro",
         label: "Digite o nome do(a) docente",
@@ -263,8 +269,10 @@ export const FORMS: FormDef[] = [
   {
     slug: "vida-universitaria",
     title: "Vida Universitária no Curso",
-    short: "Vida Universitária",
+    short: "Vida Acadêmica",
     description: "Como está sua experiência para além da sala de aula? Anônimo, ~4 min.",
+    banner: "Experiência Acadêmica e Vida Universitária",
+    card: "Avaliação da experiência universitária e atividades extracurriculares.",
     icon: "🎓",
     accent: "bg-violet-600",
     questions: [
@@ -297,6 +305,8 @@ export const FORMS: FormDef[] = [
     title: "Avaliação do Departamento PNV",
     short: "Departamento",
     description: "Feedback sobre gestão, estrutura e comunicação do departamento. Anônimo, ~4 min.",
+    banner: "Avaliação do Departamento PNV",
+    card: "Opinião sobre gestão, infraestrutura e comunicação do núcleo (PNV).",
     icon: "🏛️",
     accent: "bg-amber-600",
     questions: [

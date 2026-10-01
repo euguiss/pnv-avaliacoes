@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FORMS } from "../data/forms";
+import type { FormDef } from "../data/forms";
 import { fetchAdminData, downloadCSV, toCSV, type AdminData } from "../lib/storage";
 import { computeGroups, overallScore, type GroupStat, type QuestionStat } from "../lib/metrics";
 
@@ -89,6 +90,7 @@ function AdminDashboard({
   const rows = useMemo(() => data[activeForm] || [], [data, activeForm]);
   const groups = useMemo(() => computeGroups(form, rows), [form, rows]);
   const [selectedGroup, setSelectedGroup] = useState<string>("__all__");
+  const [view, setView] = useState<"detalhado" | "comparativo">("detalhado");
 
   const visibleGroups =
     selectedGroup === "__all__" ? groups : groups.filter((g) => g.key === selectedGroup);
@@ -134,7 +136,7 @@ function AdminDashboard({
                   : "border border-slate-300 bg-white text-slate-600 hover:border-naval-600"
               }`}
             >
-              {f.icon} {f.short} <span className="opacity-70">({n})</span>
+              {f.short} <span className="opacity-70">({n})</span>
             </button>
           );
         })}
@@ -176,15 +178,41 @@ function AdminDashboard({
         </button>
       </div>
 
-      {/* Ranking (quando há agrupamento e vendo "todos") */}
-      {form.groupBy && selectedGroup === "__all__" && groups.length > 1 && (
-        <Ranking groups={groups} label={form.slug === "professores" ? "docente" : "item"} />
+      {/* Alternância de visualização (só faz sentido com agrupamento) */}
+      {form.groupBy && groups.length > 1 && (
+        <div className="mt-6 inline-flex rounded-lg border border-slate-200 bg-white p-1">
+          <button
+            onClick={() => setView("detalhado")}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
+              view === "detalhado" ? "bg-naval-800 text-white" : "text-slate-600 hover:text-naval-700"
+            }`}
+          >
+            Detalhado
+          </button>
+          <button
+            onClick={() => setView("comparativo")}
+            className={`rounded-md px-4 py-1.5 text-sm font-medium transition ${
+              view === "comparativo" ? "bg-naval-800 text-white" : "text-slate-600 hover:text-naval-700"
+            }`}
+          >
+            Comparativo
+          </button>
+        </div>
       )}
 
       {rows.length === 0 ? (
         <p className="mt-10 text-center text-slate-500">Ainda não há respostas para este formulário.</p>
+      ) : form.groupBy && groups.length > 1 && view === "comparativo" ? (
+        <Comparativo
+          form={form}
+          groups={groups}
+          label={form.slug === "professores" ? "docente" : "disciplina"}
+        />
       ) : (
         <div className="mt-6 space-y-6">
+          {form.groupBy && selectedGroup === "__all__" && groups.length > 1 && (
+            <Ranking groups={groups} label={form.slug === "professores" ? "docente" : "item"} />
+          )}
           {visibleGroups.map((g) => (
             <GroupCard key={g.key} group={g} showTitle={Boolean(form.groupBy)} />
           ))}
@@ -224,6 +252,129 @@ function Ranking({ groups, label }: { groups: GroupStat[]; label: string }) {
         ))}
       </div>
     </section>
+  );
+}
+
+// Visão comparativa: compara todos os itens (matérias/professores) por nota geral
+// OU por uma pergunta específica, lado a lado, com gráfico de barras ordenado.
+function Comparativo({
+  form,
+  groups,
+  label,
+}: {
+  form: FormDef;
+  groups: GroupStat[];
+  label: string;
+}) {
+  // Perguntas de nota disponíveis para comparar (likert/nps).
+  const ratedQuestions = form.questions.filter((q) => q.type === "likert" || q.type === "nps");
+  const [metric, setMetric] = useState<string>("__overall__");
+
+  const isOverall = metric === "__overall__";
+  const max = isOverall ? 5 : ratedQuestions.find((q) => q.id === metric)?.type === "nps" ? 10 : 5;
+
+  // Monta linhas: { nome, valor, n }
+  const data = groups
+    .map((g) => {
+      if (isOverall) {
+        return { key: g.key, value: overallScore(g), n: g.total };
+      }
+      const stat = g.stats.find((s) => s.question.id === metric);
+      return { key: g.key, value: stat?.count ? stat.avg : 0, n: stat?.count ?? 0 };
+    })
+    .filter((d) => d.n > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const media = data.length ? data.reduce((a, d) => a + d.value, 0) / data.length : 0;
+
+  function exportComparativo() {
+    const rows = data.map((d) => ({
+      [label]: d.key,
+      nota: d.value.toFixed(2),
+      respostas: String(d.n),
+    }));
+    downloadCSV(`pnv-comparativo-${form.slug}-${isOverall ? "geral" : metric}.csv`, toCSV(rows));
+  }
+
+  const metricName = isOverall
+    ? "Nota geral"
+    : ratedQuestions.find((q) => q.id === metric)?.label ?? "";
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex-1">
+          <label className="block text-xs text-slate-500">Comparar por</label>
+          <select
+            value={metric}
+            onChange={(e) => setMetric(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:w-auto"
+          >
+            <option value="__overall__">Nota geral (média)</option>
+            {ratedQuestions.map((q) => (
+              <option key={q.id} value={q.id}>
+                {q.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="rounded-lg bg-naval-50 px-3 py-2 text-center">
+          <p className="text-xs text-naval-600">Média entre {label}s</p>
+          <p className="text-lg font-bold text-naval-800">{media.toFixed(2)}<span className="text-xs font-normal text-slate-400">/{max}</span></p>
+        </div>
+        <button
+          onClick={exportComparativo}
+          className="ml-auto rounded-lg bg-naval-600 px-4 py-2 text-sm font-medium text-white hover:bg-naval-700"
+        >
+          ⬇ Exportar comparativo
+        </button>
+      </div>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 className="text-sm font-semibold text-slate-700">{metricName}</h2>
+        <p className="mt-0.5 text-xs text-slate-400">
+          {data.length} {label}{data.length === 1 ? "" : "s"} com respostas · ordenado da maior para a menor nota
+        </p>
+        <div className="mt-4 space-y-2.5">
+          {data.map((d) => {
+            const pct = (d.value / max) * 100;
+            // Cor: acima da média = azul; abaixo = âmbar/vermelho suave.
+            const aboveAvg = d.value >= media;
+            return (
+              <div key={d.key} className="flex items-center gap-2 sm:gap-3">
+                <span className="w-28 shrink-0 truncate text-sm text-slate-700 sm:w-56" title={d.key}>
+                  {d.key}
+                </span>
+                <div className="relative h-6 flex-1 overflow-hidden rounded-md bg-slate-100">
+                  <div
+                    className={`h-full rounded-md ${aboveAvg ? "bg-naval-600" : "bg-amber-500"}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                  {/* Linha da média */}
+                  <div
+                    className="absolute top-0 h-full border-l-2 border-dashed border-slate-400"
+                    style={{ left: `${(media / max) * 100}%` }}
+                    title={`Média: ${media.toFixed(2)}`}
+                  />
+                </div>
+                <span className="w-16 shrink-0 text-right text-sm font-semibold text-naval-800">
+                  {d.value.toFixed(2)}
+                  <span className="hidden text-xs font-normal text-slate-400 sm:inline"> ({d.n})</span>
+                </span>
+              </div>
+            );
+          })}
+          {data.length === 0 && (
+            <p className="text-sm text-slate-500">Sem dados suficientes para comparar.</p>
+          )}
+        </div>
+        <div className="mt-4 flex items-center gap-4 text-xs text-slate-400">
+          <span className="flex items-center gap-1"><span className="h-2.5 w-4 rounded bg-naval-600" /> Acima da média</span>
+          <span className="flex items-center gap-1"><span className="h-2.5 w-4 rounded bg-amber-500" /> Abaixo da média</span>
+          <span className="flex items-center gap-1"><span className="h-3 border-l-2 border-dashed border-slate-400" /> Média geral</span>
+        </div>
+      </section>
+    </div>
   );
 }
 
