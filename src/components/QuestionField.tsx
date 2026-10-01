@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Question } from "../data/forms";
-import { LIKERT_LABELS, NAO_SE_APLICA } from "../data/forms";
+import { LIKERT_LABELS, NAO_SE_APLICA, MULTI_SEP } from "../data/forms";
 
 // Botão "Não se aplica / Não conheço" — exibido abaixo das escalas quando allowNA.
 // Respostas marcadas como N/A não entram na média (ver metrics.ts).
@@ -117,11 +117,9 @@ export function QuestionField({ question, value, onChange, error }: Props) {
 }
 
 // Seleção múltipla de disciplinas, agrupadas por optgroup. O valor é guardado
-// como uma string com itens separados por " | " (compatível com o restante do app,
-// que trabalha com Record<string, string>). O aluno abre um painel e toca para
+// como uma string com itens separados por MULTI_SEP (compatível com o restante do
+// app, que trabalha com Record<string, string>). O aluno abre um painel e toca para
 // marcar/desmarcar uma ou mais disciplinas.
-const MULTI_SEP = " | ";
-
 function MultiSelect({
   question,
   value,

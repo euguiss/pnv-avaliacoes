@@ -578,11 +578,20 @@ function StatRow({ stat }: { stat: QuestionStat }) {
   );
 }
 
-// Distribuição de uma pergunta categórica (radio/select): barras de proporção por opção.
+// Distribuição de uma pergunta categórica (radio/select) ou de multiseleção.
+// Para multiseleção, a barra representa a % de respondentes que citaram cada opção
+// (podendo somar mais de 100%, pois cada pessoa pode escolher várias).
 function CategoryRow({ cat }: { cat: CategoryStat }) {
+  const barColor = cat.multi ? "bg-emerald-500" : "bg-naval-500";
   return (
     <div>
       <p className="text-sm font-medium text-slate-700">{cat.question.label}</p>
+      {cat.multi && (
+        <p className="mt-0.5 text-xs text-slate-400">
+          Entre as {cat.total} {cat.total === 1 ? "pessoa que avaliou" : "pessoas que avaliaram"} este(a)
+          docente, quantas tiveram cada disciplina:
+        </p>
+      )}
       <div className="mt-2 space-y-1.5">
         {cat.counts.map((c) => (
           <div key={c.label} className="flex items-center gap-2 sm:gap-3">
@@ -591,18 +600,31 @@ function CategoryRow({ cat }: { cat: CategoryStat }) {
             </span>
             <div className="h-4 flex-1 overflow-hidden rounded-md bg-slate-100">
               <div
-                className="h-full rounded-md bg-naval-500"
-                style={{ width: `${c.pct}%` }}
+                className={`h-full rounded-md ${barColor}`}
+                style={{ width: `${Math.min(c.pct, 100)}%` }}
               />
             </div>
-            <span className="w-20 shrink-0 text-right text-xs font-semibold text-naval-800">
-              {c.pct.toFixed(0)}%
-              <span className="font-normal text-slate-400"> ({c.count})</span>
+            <span className="w-24 shrink-0 text-right text-xs font-semibold text-naval-800">
+              {cat.multi ? (
+                <>
+                  {c.count}
+                  <span className="font-normal text-slate-400"> ({c.pct.toFixed(0)}%)</span>
+                </>
+              ) : (
+                <>
+                  {c.pct.toFixed(0)}%
+                  <span className="font-normal text-slate-400"> ({c.count})</span>
+                </>
+              )}
             </span>
           </div>
         ))}
       </div>
-      <p className="mt-1 text-[11px] text-slate-400">{cat.total} respostas</p>
+      <p className="mt-1 text-[11px] text-slate-400">
+        {cat.multi
+          ? `${cat.total} ${cat.total === 1 ? "pessoa informou" : "pessoas informaram"} disciplina(s)`
+          : `${cat.total} respostas`}
+      </p>
     </div>
   );
 }

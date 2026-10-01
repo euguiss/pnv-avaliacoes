@@ -1,5 +1,5 @@
 import type { FormDef, Question } from "../data/forms";
-import { NAO_SE_APLICA } from "../data/forms";
+import { NAO_SE_APLICA, MULTI_SEP } from "../data/forms";
 
 export interface QuestionStat {
   question: Question;
@@ -15,6 +15,7 @@ export interface CategoryStat {
   question: Question;
   total: number; // nº de respostas
   counts: { label: string; count: number; pct: number }[]; // ordenado por contagem desc
+  multi?: boolean; // true para multiseleção (pct = % dos respondentes; pode somar >100%)
 }
 
 export interface GroupStat {
@@ -28,6 +29,7 @@ export interface GroupStat {
 const RATED = new Set(["likert", "nps"]);
 const TEXTUAL = new Set(["text", "textarea"]);
 const CATEGORICAL = new Set(["radio", "select"]);
+const MULTI = new Set(["multiselect"]);
 
 // Calcula estatísticas para um conjunto de linhas (respostas) de um formulário.
 function computeStats(form: FormDef, rows: Record<string, string>[]): {
@@ -81,6 +83,29 @@ function computeStats(form: FormDef, rows: Record<string, string>[]): {
           pct: (map.get(label)! / vals.length) * 100,
         }));
         categories.push({ question: q, total: vals.length, counts });
+      }
+    } else if (MULTI.has(q.type)) {
+      // Multiseleção (ex.: disciplinas lecionadas por um docente): divide cada
+      // resposta pelo separador e conta quantos RESPONDENTES citaram cada opção.
+      // O total é o nº de respondentes; a % é "% dos respondentes" (pode somar >100%).
+      const respondents = rows
+        .map((r) => r[q.id])
+        .filter((v) => v && String(v).trim().length > 0)
+        .map((v) => String(v).split(MULTI_SEP).map((s) => s.trim()).filter(Boolean));
+      if (respondents.length > 0) {
+        const map = new Map<string, number>();
+        respondents.forEach((items) => {
+          // Conta cada opção uma vez por respondente (dedup dentro da mesma resposta).
+          new Set(items).forEach((label) => map.set(label, (map.get(label) || 0) + 1));
+        });
+        const counts = [...map.entries()]
+          .map(([label, count]) => ({
+            label,
+            count,
+            pct: (count / respondents.length) * 100,
+          }))
+          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "pt-BR"));
+        categories.push({ question: q, total: respondents.length, counts, multi: true });
       }
     } else if (TEXTUAL.has(q.type)) {
       const texts = rows
