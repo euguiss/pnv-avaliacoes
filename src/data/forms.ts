@@ -33,6 +33,10 @@ export interface Question {
 // Valor usado quando o aluno marca "Não se aplica / Não conheço" numa pergunta de nota.
 export const NAO_SE_APLICA = "N/A";
 
+// Separador usado para guardar várias opções de um multiselect numa única string
+// (compatível com Record<string, string> e com o export CSV — não usa vírgula).
+export const MULTI_SEP = " | ";
+
 export interface FormDef {
   slug: string;
   title: string;
