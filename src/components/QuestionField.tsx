@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Question } from "../data/forms";
 import { LIKERT_LABELS } from "../data/forms";
 
@@ -50,6 +51,9 @@ export function QuestionField({ question, value, onChange, error }: Props) {
                 ))}
           </select>
         )}
+        {question.type === "multiselect" && (
+          <MultiSelect question={question} value={value} onChange={onChange} />
+        )}
         {question.type === "radio" && (
           <div className="flex flex-wrap gap-2">
             {question.options?.map((opt) => (
@@ -87,6 +91,149 @@ export function QuestionField({ question, value, onChange, error }: Props) {
           />
         )}
       </div>
+    </div>
+  );
+}
+
+// Seleção múltipla de disciplinas, agrupadas por optgroup. O valor é guardado
+// como uma string com itens separados por " | " (compatível com o restante do app,
+// que trabalha com Record<string, string>). O aluno abre um painel e toca para
+// marcar/desmarcar uma ou mais disciplinas.
+const MULTI_SEP = " | ";
+
+function MultiSelect({
+  question,
+  value,
+  onChange,
+}: {
+  question: Question;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState("");
+
+  const selected = value ? value.split(MULTI_SEP).filter(Boolean) : [];
+  const selectedSet = new Set(selected);
+
+  const groups = question.optionGroups ?? [];
+  const q = filter.trim().toLowerCase();
+
+  function toggle(opt: string) {
+    const next = new Set(selectedSet);
+    if (next.has(opt)) next.delete(opt);
+    else next.add(opt);
+    // Preserva a ordem original das disciplinas (varre os grupos).
+    const ordered = groups
+      .flatMap((g) => g.options)
+      .filter((o) => next.has(o));
+    onChange(ordered.join(MULTI_SEP));
+  }
+
+  return (
+    <div>
+      {/* Chips selecionados */}
+      {selected.length > 0 ? (
+        <ul className="mb-3 flex flex-wrap gap-2">
+          {selected.map((opt) => (
+            <li key={opt}>
+              <button
+                type="button"
+                onClick={() => toggle(opt)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-naval-600 bg-naval-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-naval-700"
+                aria-label={`Remover ${opt}`}
+              >
+                <span>{opt}</span>
+                <span aria-hidden className="text-white/80">✕</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mb-3 text-xs text-slate-400">Nenhuma disciplina selecionada ainda.</p>
+      )}
+
+      {/* Botão para abrir/fechar o painel de seleção */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 transition hover:border-naval-600"
+      >
+        <span>
+          {open
+            ? "Fechar lista de disciplinas"
+            : selected.length > 0
+              ? "Adicionar / editar disciplinas"
+              : "Selecionar disciplinas"}
+        </span>
+        <span aria-hidden className={`transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+      </button>
+
+      {open && (
+        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          {/* Campo de busca para filtrar a lista */}
+          <input
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Buscar disciplina (código ou nome)…"
+            className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-naval-600 focus:outline-none focus:ring-2 focus:ring-naval-100"
+          />
+
+          <div className="max-h-72 space-y-3 overflow-y-auto pr-1">
+            {groups.map((group) => {
+              const opts = group.options.filter(
+                (o) => !q || o.toLowerCase().includes(q)
+              );
+              if (opts.length === 0) return null;
+              return (
+                <div key={group.label}>
+                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {opts.map((opt) => {
+                      const active = selectedSet.has(opt);
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => toggle(opt)}
+                          className={`rounded-lg border px-2.5 py-1.5 text-left text-xs transition ${
+                            active
+                              ? "border-naval-600 bg-naval-600 text-white"
+                              : "border-slate-300 bg-white text-slate-700 hover:border-naval-600"
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            {groups.every(
+              (g) => g.options.filter((o) => !q || o.toLowerCase().includes(q)).length === 0
+            ) && (
+              <p className="text-sm text-slate-500">Nenhuma disciplina encontrada para “{filter}”.</p>
+            )}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-xs text-slate-500">
+              {selected.length} selecionada{selected.length === 1 ? "" : "s"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded-lg bg-naval-800 px-4 py-1.5 text-xs font-semibold text-white hover:bg-naval-900"
+            >
+              Concluir
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

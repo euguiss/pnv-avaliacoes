@@ -2,7 +2,7 @@
 // Matérias e professores preenchidos com dados oficiais (relação de disciplinas PNV ativas
 // e orientadores do PPGEN). Atualize conforme mudanças de grade / corpo docente.
 
-export type QuestionType = "likert" | "nps" | "select" | "text" | "textarea" | "radio";
+export type QuestionType = "likert" | "nps" | "select" | "multiselect" | "text" | "textarea" | "radio";
 
 // Grupo de opções para <select> (permite <optgroup>).
 export interface OptionGroup {
@@ -130,6 +130,12 @@ export const MATERIAS_GRUPOS: OptionGroup[] = [
 // Valor da opção "Outra" da disciplina (usado para mostrar o campo condicional).
 export const MATERIA_OUTRA = "Outra disciplina (não listada)";
 
+// Grupos de disciplinas sem a opção "Outra" — usados na seleção múltipla de
+// disciplinas lecionadas por um docente (não faz sentido um chip "Outra" ali).
+export const MATERIAS_GRUPOS_SEM_OUTRA: OptionGroup[] = MATERIAS_GRUPOS.filter(
+  (g) => g.label !== "Outra"
+);
+
 // Lista achatada (compat. para exportação/validação e outros usos).
 export const MATERIAS: string[] = MATERIAS_GRUPOS.flatMap((g) => g.options);
 
@@ -253,7 +259,13 @@ export const FORMS: FormDef[] = [
         placeholder: "Nome completo do(a) professor(a)",
         showIf: { questionId: "professor", equals: [PROFESSOR_OUTRO] },
       },
-      { id: "disciplina", label: "Em qual disciplina você teve aula com este(a) docente?", type: "text" },
+      {
+        id: "disciplina",
+        label: "Em qual(is) disciplina(s) você teve aula com este(a) docente?",
+        type: "multiselect",
+        optionGroups: MATERIAS_GRUPOS_SEM_OUTRA,
+        help: "Toque para abrir a lista e selecione uma ou mais disciplinas.",
+      },
       { id: "didatica", label: "Clareza e didática nas explicações.", type: "likert", required: true },
       { id: "dominio", label: "Domínio e atualização do conteúdo.", type: "likert", required: true },
       { id: "disponibilidade", label: "Disponibilidade para tirar dúvidas.", type: "likert", required: true },
