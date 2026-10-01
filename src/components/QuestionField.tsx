@@ -1,6 +1,25 @@
 import { useState } from "react";
 import type { Question } from "../data/forms";
-import { LIKERT_LABELS } from "../data/forms";
+import { LIKERT_LABELS, NAO_SE_APLICA } from "../data/forms";
+
+// Botão "Não se aplica / Não conheço" — exibido abaixo das escalas quando allowNA.
+// Respostas marcadas como N/A não entram na média (ver metrics.ts).
+function NAButton({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const active = value === NAO_SE_APLICA;
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(active ? "" : NAO_SE_APLICA)}
+      className={`mt-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+        active
+          ? "border-slate-500 bg-slate-600 text-white"
+          : "border-slate-300 bg-white text-slate-500 hover:border-slate-500"
+      }`}
+    >
+      Não se aplica / Não conheço
+    </button>
+  );
+}
 
 interface Props {
   question: Question;
@@ -24,9 +43,11 @@ export function QuestionField({ question, value, onChange, error }: Props) {
 
       <div className="mt-3">
         {question.type === "likert" && (
-          <LikertScale value={value} onChange={onChange} />
+          <LikertScale value={value} onChange={onChange} allowNA={question.allowNA} />
         )}
-        {question.type === "nps" && <NpsScale value={value} onChange={onChange} />}
+        {question.type === "nps" && (
+          <NpsScale value={value} onChange={onChange} allowNA={question.allowNA} />
+        )}
         {question.type === "select" && (
           <select
             value={value}
@@ -238,7 +259,15 @@ function MultiSelect({
   );
 }
 
-function LikertScale({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function LikertScale({
+  value,
+  onChange,
+  allowNA,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  allowNA?: boolean;
+}) {
   // Escala compacta: 5 botões numéricos lado a lado (ótimo em mobile) + legenda nas pontas.
   const short = ["Muito ruim", "Ruim", "Regular", "Bom", "Excelente"];
   return (
@@ -267,11 +296,20 @@ function LikertScale({ value, onChange }: { value: string; onChange: (v: string)
           );
         })}
       </div>
+      {allowNA && <NAButton value={value} onChange={onChange} />}
     </div>
   );
 }
 
-function NpsScale({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function NpsScale({
+  value,
+  onChange,
+  allowNA,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  allowNA?: boolean;
+}) {
   return (
     <div>
       <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-11">
@@ -297,6 +335,7 @@ function NpsScale({ value, onChange }: { value: string; onChange: (v: string) =>
         <span>Nada provável</span>
         <span>Muito provável</span>
       </div>
+      {allowNA && <NAButton value={value} onChange={onChange} />}
     </div>
   );
 }

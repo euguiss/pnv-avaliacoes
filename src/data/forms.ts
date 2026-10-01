@@ -22,7 +22,16 @@ export interface Question {
   // Renderiza esta pergunta só quando outra pergunta tiver um dos valores listados.
   // Ex.: campo "outra disciplina" aparece só quando disciplina === "Outra (...)".
   showIf?: { questionId: string; equals: string[] };
+  // Para perguntas de nota (likert/nps): oferece a opção "Não se aplica / Não conheço".
+  // Respostas N/A não entram na média (ficam registradas, mas não poluem a estatística).
+  allowNA?: boolean;
+  // Marca a pergunta como dimensão de SEGMENTAÇÃO no painel admin
+  // (ex.: ano do curso) — permite filtrar/comparar respostas por essa dimensão.
+  segmentBy?: boolean;
 }
+
+// Valor usado quando o aluno marca "Não se aplica / Não conheço" numa pergunta de nota.
+export const NAO_SE_APLICA = "N/A";
 
 export interface FormDef {
   slug: string;
@@ -288,16 +297,16 @@ export const FORMS: FormDef[] = [
     icon: "🎓",
     accent: "bg-violet-600",
     questions: [
-      { id: "ano", label: "Ano que você está cursando.", type: "select", required: true, options: ANOS_CURSO },
-      { id: "acolhimento", label: "Acolhimento dos calouros (recepção, integração).", type: "likert", required: true },
-      { id: "ca", label: "Atuação do Centro Acadêmico / representação estudantil.", type: "likert", required: true },
+      { id: "ano", label: "Ano que você está cursando.", type: "select", required: true, options: ANOS_CURSO, segmentBy: true },
+      { id: "acolhimento", label: "Acolhimento dos calouros (recepção, integração).", type: "likert", required: true, allowNA: true },
+      { id: "ca", label: "Atuação do Centro Acadêmico / representação estudantil.", type: "likert", required: true, allowNA: true },
       {
         id: "entidades",
         label: "Participação em entidades estudantis (equipes, empresa júnior, atlética).",
         type: "radio",
         options: ["Participo atualmente", "Já participei", "Nunca participei"],
       },
-      { id: "eventos", label: "Qualidade dos eventos (semanas acadêmicas, palestras, visitas técnicas).", type: "likert", required: true },
+      { id: "eventos", label: "Qualidade dos eventos (semanas acadêmicas, palestras, visitas técnicas).", type: "likert", required: true, allowNA: true },
       { id: "espacos", label: "Espaços de convivência e infraestrutura do campus.", type: "likert", required: true },
       { id: "bemestar", label: "Equilíbrio entre carga acadêmica e saúde mental / bem-estar.", type: "likert", required: true },
       {
@@ -307,7 +316,7 @@ export const FORMS: FormDef[] = [
         options: ["Sim", "Mais ou menos", "Não"],
       },
       { id: "pertencimento", label: "Sentimento de pertencimento à turma e ao curso.", type: "likert", required: true },
-      { id: "networking", label: "Oportunidades de networking e contato com o mercado/Marinha/empresas.", type: "likert", required: true },
+      { id: "networking", label: "Oportunidades de networking e contato com o mercado/Marinha/empresas.", type: "likert", required: true, allowNA: true },
       { id: "quero", label: "Que atividade/evento você gostaria que existisse ou se repetisse?", type: "textarea" },
       { id: "negativo", label: "O que mais impacta negativamente sua experiência hoje?", type: "textarea" },
     ],
@@ -322,18 +331,32 @@ export const FORMS: FormDef[] = [
     icon: "🏛️",
     accent: "bg-amber-600",
     questions: [
-      { id: "ano", label: "Ano que você está cursando.", type: "select", required: true, options: ANOS_CURSO },
+      { id: "ano", label: "Ano que você está cursando.", type: "select", required: true, options: ANOS_CURSO, segmentBy: true },
       { id: "comunicacao", label: "Comunicação do departamento com os alunos (avisos, prazos, mudanças).", type: "likert", required: true },
-      { id: "secretaria", label: "Facilidade de contato com a secretaria / coordenação.", type: "likert", required: true },
+      { id: "secretaria", label: "Facilidade de contato com a secretaria / coordenação.", type: "likert", required: true, allowNA: true },
       { id: "grade", label: "Organização da grade e oferta de disciplinas (conflitos, pré-requisitos, vagas).", type: "likert", required: true },
       { id: "infra", label: "Infraestrutura (laboratórios, tanque de provas, softwares, salas).", type: "likert", required: true },
-      { id: "ic", label: "Oferta e clareza sobre iniciação científica, estágios e bolsas.", type: "likert", required: true },
-      { id: "extensao", label: "Apoio a atividades de extensão e projetos estudantis.", type: "likert", required: true },
-      { id: "transparencia", label: "Transparência nas decisões e abertura para ouvir os alunos.", type: "likert", required: true },
-      { id: "mercado", label: "Alinhamento do curso com o mercado e tendências (offshore, energias limpas, digitalização).", type: "likert", required: true },
+      { id: "ic", label: "Oferta e clareza sobre iniciação científica, estágios e bolsas.", type: "likert", required: true, allowNA: true },
+      { id: "extensao", label: "Apoio a atividades de extensão e projetos estudantis.", type: "likert", required: true, allowNA: true },
+      { id: "transparencia", label: "Transparência nas decisões e abertura para ouvir os alunos.", type: "likert", required: true, allowNA: true },
+      { id: "mercado", label: "Alinhamento do curso com o mercado e tendências (offshore, energias limpas, digitalização).", type: "likert", required: true, allowNA: true },
       { id: "geral", label: "Avaliação geral do departamento.", type: "likert", required: true },
+      {
+        id: "prioridade_area",
+        label: "Qual área o departamento deveria priorizar primeiro?",
+        type: "radio",
+        required: true,
+        options: [
+          "Infraestrutura (laboratórios, softwares)",
+          "Organização da grade e oferta de disciplinas",
+          "Comunicação com os alunos",
+          "Alinhamento com o mercado",
+          "Apoio a extensão e projetos estudantis",
+          "Iniciação científica, estágios e bolsas",
+        ],
+      },
       { id: "forte", label: "Qual é o maior ponto forte do PNV hoje?", type: "textarea" },
-      { id: "prioridade", label: "Qual é a prioridade nº 1 de melhoria para o departamento?", type: "textarea" },
+      { id: "prioridade", label: "Quer detalhar a prioridade nº 1 de melhoria para o departamento?", type: "textarea" },
     ],
   },
 ];

@@ -3,7 +3,16 @@ import { Link } from "react-router-dom";
 import { FORMS } from "../data/forms";
 import type { FormDef } from "../data/forms";
 import { fetchAdminData, downloadCSV, toCSV, type AdminData } from "../lib/storage";
-import { computeGroups, overallScore, type GroupStat, type QuestionStat } from "../lib/metrics";
+import {
+  computeGroups,
+  overallScore,
+  executiveSummary,
+  segmentByQuestion,
+  segmentQuestion,
+  type GroupStat,
+  type QuestionStat,
+  type CategoryStat,
+} from "../lib/metrics";
 
 const ADMIN_PASSWORD = "1120";
 
@@ -200,6 +209,13 @@ function AdminDashboard({
         </div>
       )}
 
+      {rows.length > 0 && (
+        <>
+          <ExecutiveSummaryCard form={form} rows={rows} />
+          <SegmentationCard form={form} rows={rows} />
+        </>
+      )}
+
       {rows.length === 0 ? (
         <p className="mt-10 text-center text-slate-500">Ainda não há respostas para este formulário.</p>
       ) : form.groupBy && groups.length > 1 && view === "comparativo" ? (
@@ -219,6 +235,98 @@ function AdminDashboard({
         </div>
       )}
     </div>
+  );
+}
+
+// Resumo executivo: nota geral + top 3 pontos fortes e fracos (leitura em segundos).
+function ExecutiveSummaryCard({ form, rows }: { form: FormDef; rows: Record<string, string>[] }) {
+  const summary = useMemo(() => executiveSummary(form, rows), [form, rows]);
+  if (summary.total === 0 || (summary.strengths.length === 0 && summary.weaknesses.length === 0))
+    return null;
+
+  const Bar = ({ label, avg }: { label: string; avg: number }) => (
+    <li className="flex items-center gap-2">
+      <span className="min-w-0 flex-1 truncate text-xs text-slate-600" title={label}>
+        {label}
+      </span>
+      <span className="shrink-0 text-xs font-semibold text-naval-800">{avg.toFixed(2)}</span>
+    </li>
+  );
+
+  return (
+    <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Resumo executivo
+        </h2>
+        <div className="text-right">
+          <p className="text-xs text-slate-400">Nota geral</p>
+          <p className="text-2xl font-bold text-naval-900">
+            {summary.overall.toFixed(2)}
+            <span className="text-sm font-normal text-slate-400">/5</span>
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-5 sm:grid-cols-2">
+        <div>
+          <p className="mb-2 text-xs font-semibold text-emerald-700">▲ Pontos mais fortes</p>
+          <ul className="space-y-1.5">
+            {summary.strengths.map((h) => (
+              <Bar key={h.label} label={h.label} avg={h.avg} />
+            ))}
+          </ul>
+        </div>
+        <div>
+          <p className="mb-2 text-xs font-semibold text-amber-700">▼ Pontos a melhorar</p>
+          <ul className="space-y-1.5">
+            {summary.weaknesses.map((h) => (
+              <Bar key={h.label} label={h.label} avg={h.avg} />
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Segmentação: nota geral por dimensão (ex.: ano do curso), para comparar coortes.
+function SegmentationCard({ form, rows }: { form: FormDef; rows: Record<string, string>[] }) {
+  const q = segmentQuestion(form);
+  const segments = useMemo(
+    () => (q ? segmentByQuestion(form, rows, q.id) : []),
+    [form, rows, q]
+  );
+  if (!q || segments.length <= 1) return null;
+
+  const maxVal = 5;
+  return (
+    <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        Nota geral por {q.label.replace(/\.$/, "").toLowerCase()}
+      </h2>
+      <div className="mt-4 space-y-2.5">
+        {segments.map((s) => (
+          <div key={s.key} className="flex items-center gap-2 sm:gap-3">
+            <span className="w-24 shrink-0 truncate text-sm text-slate-700 sm:w-32" title={s.key}>
+              {s.key}
+            </span>
+            <div className="h-5 flex-1 overflow-hidden rounded-md bg-slate-100">
+              <div
+                className="h-full rounded-md bg-violet-500"
+                style={{ width: `${(s.overall / maxVal) * 100}%` }}
+              />
+            </div>
+            <span className="w-16 shrink-0 text-right text-sm font-semibold text-naval-800">
+              {s.overall.toFixed(2)}
+              <span className="hidden text-xs font-normal text-slate-400 sm:inline"> ({s.total})</span>
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[11px] text-slate-400">
+        Compara a nota geral média entre os diferentes valores de “{q.label.replace(/\.$/, "")}”.
+      </p>
+    </section>
   );
 }
 
@@ -396,6 +504,14 @@ function GroupCard({ group, showTitle }: { group: GroupStat; showTitle: boolean 
         ))}
       </div>
 
+      {group.categories.length > 0 && (
+        <div className="mt-5 space-y-4 border-t border-slate-100 pt-4">
+          {group.categories.map((c) => (
+            <CategoryRow key={c.question.id} cat={c} />
+          ))}
+        </div>
+      )}
+
       {group.comments.length > 0 && (
         <div className="mt-5 space-y-4 border-t border-slate-100 pt-4">
           {group.comments.map((c) => (
@@ -452,7 +568,41 @@ function StatRow({ stat }: { stat: QuestionStat }) {
           );
         })}
       </div>
-      <p className="text-[11px] text-slate-400">{stat.count} respostas</p>
+      <p className="text-[11px] text-slate-400">
+        {stat.count} respostas
+        {stat.na > 0 && (
+          <span className="ml-1 text-slate-400">· {stat.na} “não se aplica” (fora da média)</span>
+        )}
+      </p>
+    </div>
+  );
+}
+
+// Distribuição de uma pergunta categórica (radio/select): barras de proporção por opção.
+function CategoryRow({ cat }: { cat: CategoryStat }) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-slate-700">{cat.question.label}</p>
+      <div className="mt-2 space-y-1.5">
+        {cat.counts.map((c) => (
+          <div key={c.label} className="flex items-center gap-2 sm:gap-3">
+            <span className="w-40 shrink-0 truncate text-xs text-slate-600 sm:w-56" title={c.label}>
+              {c.label}
+            </span>
+            <div className="h-4 flex-1 overflow-hidden rounded-md bg-slate-100">
+              <div
+                className="h-full rounded-md bg-naval-500"
+                style={{ width: `${c.pct}%` }}
+              />
+            </div>
+            <span className="w-20 shrink-0 text-right text-xs font-semibold text-naval-800">
+              {c.pct.toFixed(0)}%
+              <span className="font-normal text-slate-400"> ({c.count})</span>
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-1 text-[11px] text-slate-400">{cat.total} respostas</p>
     </div>
   );
 }
